@@ -97,9 +97,10 @@ class Config:
                 context.update({key: value})
             line=f.readline()
         f.close()
-Config("/Users/andrezay/test.conf")
 
+def main():
+    for config in os.listdir("/etc/autobackup"):
+        Config(config)
 
-
-
-
+if __name__=='__main__':
+    main()
