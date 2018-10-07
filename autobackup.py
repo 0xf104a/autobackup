@@ -100,7 +100,7 @@ class Config:
 
 def main():
     for config in os.listdir("/etc/autobackup"):
-        Config(config)
+        Config("/etc/autobackup/"+config)
 
 if __name__=='__main__':
     main()
