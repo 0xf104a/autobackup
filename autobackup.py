@@ -1,16 +1,25 @@
 import os
 import sys
 import logging
+import datetime
 
 import paramiko
 #TODO:Improve parsing!
-logger=logging.getLogger(__name__)
-
+logging.basicConfig(filename="autobackup.log", level=logging.DEBUG)
+#TODO:def argcount(fn):
+#    def wrapped(self, context, *args, **kwargs):
+#        if len(self.args)
 class Command:
     def __init__(self, cmdline):
         cmd=cmdline.split(":")
         self.name=cmd[0]
-        self.args=cmd[1:]
+        args=cmd[1:]
+        for i,arg in enumerate(args):
+            if arg[0]=='!':
+                cmd=commands[arg[1:]](arg[1:])
+                result=cmd.run(dict())
+                args[i]=result["result"]
+                
     def run(self, context, *args, **kwargs):
         pass
 
@@ -20,7 +29,10 @@ class Script:
         self.data=context
     def run(self):
         for command in self.commands:
-            self.data.update(command.run(self.data))
+            try:
+                self.data.update(command.run(self.data))
+            except Exception as e:
+                logging.exception("Failed to run command:"+command.name+":"+str(e))
 ###ALL COMMANDS###
 class ConnectCommand(Command):
     def run(self, context, *args, **kwargs):
@@ -58,11 +70,20 @@ class ExecCommand(Command):
 class DumpStdOutCommand(Command):#FIXME:All prechecks
     def run(self, context, *args, **kwargs):
         if len(self.args)<1:
-            logger.error("DUMPSTDOUT:requres an argument")
+            logger.error("DUMPSTDOUT:requires an argument")
             return dict()
         with open(self.args[0],"wb") as f:
             f.write(context["stdout"].read())
+        logger.info("DUMPSTDOUT:succesfully dumped to file:"+self.args[0])
         return dict()
+
+class TimeCommand(Command):
+    def run(self, context, *args, **kwargs):
+        return {"result":str(datetime.datetime.now())}
+
+class LogCommand(Command):
+    def run(self, context, *args, **kwargs):
+
 
 commands={"CONNECT_SSH":ConnectCommand,"DUMPSTDOUT":DumpStdOutCommand,"CLOSE_SSH":CloseCommand}
 class Config:
@@ -91,6 +112,7 @@ class Config:
                         script.commands.append(ExecCommand(line))
                 script.run()
             if line=="":
+                line=f.readline()
                 continue
             if line!="!END":
                 key, value = line.split(":")
