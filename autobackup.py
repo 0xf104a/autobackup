@@ -7,8 +7,12 @@ import paramiko
 #TODO:Improve parsing!
 logging.basicConfig(filename="autobackup.log", level=logging.DEBUG)
 ch = logging.StreamHandler(sys.stdout)
-logger=logging.getLogger()
+ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+logger=logging.getLogger(__name__)
 logger.addHandler(ch)
+
 #TODO:def argcount(fn):
 #    def wrapped(self, context, *args, **kwargs):
 #        if len(self.args)
@@ -76,6 +80,9 @@ class DumpStdOutCommand(Command):#FIXME:All prechecks
         if len(self.args)<1:
             logger.error("DUMPSTDOUT:requires an argument")
             return dict()
+        s=""
+        for arg in self.args:
+            s+=arg
         with open(self.args[0],"wb") as f:
             f.write(context["stdout"].read())
         logger.info("DUMPSTDOUT:succesfully dumped to file:"+self.args[0])
@@ -95,7 +102,9 @@ class LogCommand(Command):
             level=self.args[0]
             if level not in self.loglevels:
                 logger.error("LOG:bad arugment:"+level)
-            msg=self.args[1]
+            msg=""
+            for i in range(0,len(self.args),1):
+                msg+=self.args[i]
             self.loglevels[level](msg)
         return dict()
 
@@ -140,4 +149,4 @@ def main():
         Config("/etc/autobackup/"+config)
 
 if __name__=='__main__':
-    Config("test.conf")
+    main()
