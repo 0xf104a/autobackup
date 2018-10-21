@@ -6,6 +6,9 @@ import datetime
 import paramiko
 #TODO:Improve parsing!
 logging.basicConfig(filename="autobackup.log", level=logging.DEBUG)
+ch = logging.StreamHandler(sys.stdout)
+logger=logging.getLogger()
+logger.addHandler(ch)
 #TODO:def argcount(fn):
 #    def wrapped(self, context, *args, **kwargs):
 #        if len(self.args)
@@ -19,6 +22,7 @@ class Command:
                 cmd=commands[arg[1:]](arg[1:])
                 result=cmd.run(dict())
                 args[i]=result["result"]
+        self.args=args
                 
     def run(self, context, *args, **kwargs):
         pass
@@ -82,10 +86,21 @@ class TimeCommand(Command):
         return {"result":str(datetime.datetime.now())}
 
 class LogCommand(Command):
+    loglevels={"debug":logger.debug,"info":logger.info,"warn":logger.warning,"error":logger.error}
     def run(self, context, *args, **kwargs):
+        if len(self.args)<2:
+            logger.error("LOG:not enough arguments")
+            return dict()
+        else:
+            level=self.args[0]
+            if level not in self.loglevels:
+                logger.error("LOG:bad arugment:"+level)
+            msg=self.args[1]
+            self.loglevels[level](msg)
+        return dict()
 
 
-commands={"CONNECT_SSH":ConnectCommand,"DUMPSTDOUT":DumpStdOutCommand,"CLOSE_SSH":CloseCommand}
+commands={"CONNECT_SSH":ConnectCommand,"DUMPSTDOUT":DumpStdOutCommand,"CLOSE_SSH":CloseCommand,"LOG":LogCommand,"TIME":TimeCommand}
 class Config:
     def __init__(self,fname):
         context=dict()
@@ -125,4 +140,4 @@ def main():
         Config("/etc/autobackup/"+config)
 
 if __name__=='__main__':
-    main()
+    Config("test.conf")
